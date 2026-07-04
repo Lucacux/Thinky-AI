@@ -1,5 +1,7 @@
 # 🧠 Thinky-AI
 
+![Thinky-AI Banner](./assets/banner.png)
+
 An AI-powered Discord assistant and infrastructure report aggregator, running local LLM inference on legacy hardware.
 
 ## ✨ Key Features
