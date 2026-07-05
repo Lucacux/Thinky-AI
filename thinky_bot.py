@@ -27,8 +27,28 @@ infraestructura con orgullo y lealtad. Respondé siempre en español argentino, 
 metiendo algún chiste o comentario sarcástico ocasional sobre tu hardware de hace más de una década."""
 
 intents = discord.Intents.default()
-intents.message_content = True 
+intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
+
+# IDs de mensajes de update ya reportados, para no crear el hilo dos veces
+# si Discord dispara más de un evento de edición sobre el mensaje final.
+updates_ya_reportados = set()
+
+def _embed_a_texto(embed: discord.Embed) -> str:
+    """Vuelca título, descripción y fields de un embed a texto plano para pasárselo a la IA."""
+    partes = []
+    if embed.title:
+        partes.append(embed.title)
+    if embed.description:
+        partes.append(embed.description)
+    for field in embed.fields:
+        partes.append(f"{field.name}: {field.value}")
+    return "\n".join(partes)
+
+def _es_reporte_de_update_finalizado(embed: discord.Embed) -> bool:
+    """Update-Bot edita un único mensaje en vivo (iniciado -> en progreso -> completado/fallido).
+    Solo el título final arranca con ✅ o ❌; todo lo anterior es progreso a medio terminar."""
+    return bool(embed.title) and embed.title.startswith(("✅", "❌"))
 
 async def consultar_ia(prompt: str, url: str, model_name: str, contexto_extra: str = ""):
     system_prompt = THINKY_PERSONA + "\n" + contexto_extra
@@ -109,23 +129,8 @@ async def on_message(message):
     if message.author == bot.user:
         return
 
-    # 1. Automatización para Updates-Bot
-    if message.author.name == "Updates-Bot":
-        log_content = message.content
-        if message.embeds:
-            log_content += "\n" + (message.embeds[0].description or "")
-
-        prompt = f"""Revisá este log de actualizaciones. Decime cortito qué se actualizó, 
-        si hay algún paquete crítico y si hace falta reiniciar. Log:\n{log_content}"""
-        
-        await message.add_reaction("⚙️")
-        explicacion = await consultar_ia(prompt, FAST_MODEL_URL, "fast", "Misión: Analista de updates.")
-        thread = await message.create_thread(name="Reporte de Updates", auto_archive_duration=60)
-        await thread.send(f"**Thinky Fast-Report:**\n{explicacion[:1900]}")
-        return 
-
-    # 2. Automatización para GameServer-Bot
-    elif message.author.name == "GameServer-Bot":
+    # 1. Automatización para GameServer-Bot
+    if message.author.name == "GameServer-Bot":
         log_content = message.content
         if message.embeds:
             log_content += "\n" + (message.embeds[0].description or "")
@@ -139,12 +144,12 @@ async def on_message(message):
         await thread.send(f"**Thinky Fast-Report:**\n{explicacion[:1900]}")
         return 
 
-    # 3. Procesar comandos nativos (!modelo, etc)
+    # 2. Procesar comandos nativos (!modelo, etc)
     if message.content.startswith(bot.command_prefix):
         await bot.process_commands(message)
         return
 
-    # 4. CHAT NATURAL CON CRONÓMETRO
+    # 3. CHAT NATURAL CON CRONÓMETRO
     if message.channel.id == THINKY_CHANNEL_ID and not message.author.bot:
         async with message.channel.typing():
             inicio = time.perf_counter() 
@@ -165,6 +170,35 @@ async def on_message(message):
             mensaje_final = respuesta[:2000 - len(footer)] + footer
             
             await message.reply(mensaje_final)
+
+# --- AUTOMATIZACIÓN PARA UPDATES-BOT ---
+# Updates-Bot no manda un mensaje por evento: edita UN solo mensaje en vivo
+# (iniciado -> en progreso -> completado/fallido). on_message solo se dispara
+# con el mensaje inicial, así que hay que escuchar las ediciones y esperar
+# a que el título del embed indique que el update ya terminó.
+@bot.event
+async def on_message_edit(before, after):
+    if after.author.name != "Updates-Bot":
+        return
+    if not after.embeds:
+        return
+
+    embed = after.embeds[0]
+    if not _es_reporte_de_update_finalizado(embed):
+        return  # todavía está "iniciado" o "en progreso", esperamos la próxima edición
+
+    if after.id in updates_ya_reportados:
+        return
+    updates_ya_reportados.add(after.id)
+
+    log_content = _embed_a_texto(embed)
+    prompt = f"""Revisá este reporte de actualizaciones ya finalizado. Decime cortito qué se actualizó,
+    si hay algún paquete crítico y si hace falta reiniciar. Reporte:\n{log_content}"""
+
+    await after.add_reaction("⚙️")
+    explicacion = await consultar_ia(prompt, FAST_MODEL_URL, "fast", "Misión: Analista de updates.")
+    thread = await after.create_thread(name="Reporte de Updates", auto_archive_duration=60)
+    await thread.send(f"**Thinky Fast-Report:**\n{explicacion[:1900]}")
 
 if __name__ == "__main__":
     bot.run(TOKEN)
