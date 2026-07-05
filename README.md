@@ -6,8 +6,8 @@ An AI-powered Discord assistant and infrastructure report aggregator, running lo
 
 ## ✨ Key Features
 
-- **AI chat companion:** talk directly in a dedicated channel, with hot-swappable models (`!modelo fast` for quick replies, `!modelo care` for more analytical ones).
-- **Automated report aggregation:** listens for messages from other infrastructure bots (`Updates-Bot`, `GameServer-Bot`) and summarizes their logs into a readable thread using the local LLM.
+- **AI chat companion:** talk directly in a dedicated channel, with hot-swappable models (`!model fast` for quick replies, `!model care` for more analytical ones).
+- **Automated report aggregation:** listens for messages from other infrastructure bots (`Updates-Bot`, `GameServer-Bot`) and summarizes their logs into a detailed, structured thread, always using the `care` model for maximum analysis quality.
 - **Runs entirely on local inference:** no external AI API calls — talks to a local OpenAI-compatible `llama.cpp` server over HTTP.
 
 ## 🧰 Stack
