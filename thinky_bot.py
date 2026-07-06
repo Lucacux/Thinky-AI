@@ -211,10 +211,13 @@ async def on_message_edit(before, after):
     prompt = f"""Review this finalized update report in detail. Report explicitly on:
     1. Which host(s) were updated and how many packages each.
     2. The specific packages involved, with old/new versions if the report includes them.
-    3. Whether any of those packages are security-critical (kernel, sudo, openssh, systemd, libc,
+    3. For EACH updated package, briefly explain what the package does (its purpose) and where it
+       belongs: whether it is part of the base operating system / core system, or a commonly-installed
+       add-on, and what it is typically used for. Keep each explanation to one or two sentences.
+    4. Whether any of those packages are security-critical (kernel, sudo, openssh, systemd, libc,
        crypto/TLS libraries, etc.) and call that out clearly if so.
-    4. Whether a reboot or service restart is required, and whether the report says one already happened.
-    5. Whether anything failed — never bury or soften a failure.
+    5. Whether a reboot or service restart is required, and whether the report says one already happened.
+    6. Whether anything failed — never bury or soften a failure.
     If the report lacks the detail to answer one of these points, say so explicitly instead of guessing.
     Report:\n{log_content}"""
 
