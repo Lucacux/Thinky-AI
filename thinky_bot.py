@@ -9,8 +9,8 @@ from dotenv import load_dotenv
 load_dotenv()
 TOKEN = os.getenv("DISCORD_BOT_TOKEN") 
 
-FAST_MODEL_URL = "http://127.0.0.1:8081/v1/chat/completions"
-CARE_MODEL_URL = "http://127.0.0.1:8082/v1/chat/completions"
+FAST_MODEL_URL = os.getenv("FAST_MODEL_URL", "http://127.0.0.1:8081/v1/chat/completions")
+CARE_MODEL_URL = os.getenv("CARE_MODEL_URL", "http://127.0.0.1:8082/v1/chat/completions")
 
 # Estado global para recordar qué modelo estamos usando
 ACTIVE_MODEL_URL = FAST_MODEL_URL
