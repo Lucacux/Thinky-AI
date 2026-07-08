@@ -1,4 +1,3 @@
-# deploy-test 2026-07-08: linea no-op para validar el auto-deploy por webhook (Dokploy). Seguro de borrar.
 import discord
 from discord.ext import commands
 import aiohttp
